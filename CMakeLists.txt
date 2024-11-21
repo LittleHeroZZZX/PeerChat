@@ -11,6 +11,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Qt6 COMPONENTS Widgets REQUIRED)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/src/network)
+add_subdirectory(${PROJECT_SOURCE_DIR}/third_party)
 aux_source_directory(./src srcs)
 
 add_executable(${PROJECT_NAME}
