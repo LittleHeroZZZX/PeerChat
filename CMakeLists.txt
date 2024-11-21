@@ -8,15 +8,12 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 COMPONENTS Widgets REQUIRED)
+find_package(
+  Qt6
+  COMPONENTS Widgets
+  REQUIRED)
 
+add_subdirectory(${PROJECT_SOURCE_DIR}/src)
 add_subdirectory(${PROJECT_SOURCE_DIR}/src/network)
+add_subdirectory(${PROJECT_SOURCE_DIR}/src/utils)
 add_subdirectory(${PROJECT_SOURCE_DIR}/third_party)
-aux_source_directory(./src srcs)
-
-add_executable(${PROJECT_NAME}
-    ${srcs} 
-)
-
-target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Widgets)
-
