@@ -23,3 +23,8 @@ class Logger {
     static std::shared_ptr<spdlog::logger> instance;
     static std::once_flag init_instance_flag;
 };
+
+void log_error(const std::string &message);
+void log_info(const std::string &message);
+void log_debug(const std::string &message);
+void log_warning(const std::string &message);
