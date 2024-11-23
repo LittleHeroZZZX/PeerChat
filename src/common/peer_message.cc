@@ -7,6 +7,16 @@ Message::Message(Message&& other)
       timestamp(other.timestamp),
       content_type(other.content_type) {}
 
+Message& Message::operator=(Message&& other) {
+    if (this != &other) {
+        sender = std::move(other.sender);
+        content = std::move(other.content);
+        timestamp = other.timestamp;
+        content_type = other.content_type;
+    }
+    return *this;
+}
+
 Message Message::make_text(SenderInfo sender, std::string content) {
     std::time_t timestamp = std::time(nullptr);
     return Message(std::move(sender),
@@ -42,3 +52,10 @@ Message::Message(SenderInfo sender,
       timestamp(timestamp),
       content_type(type) {}
 SenderInfo::SenderInfo(SenderInfo&& other) : name(std::move(other.name)) {}
+
+SenderInfo& SenderInfo::operator=(SenderInfo&& other) {
+    if (this != &other) {
+        name = std::move(other.name);
+    }
+    return *this;
+}

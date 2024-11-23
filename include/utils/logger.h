@@ -18,6 +18,7 @@ class Logger {
     static void init_singleton() {
         instance = spdlog::basic_logger_mt("file_logger", "logs/peerchat.log");
         spdlog::set_level(spdlog::level::info);
+        instance->flush_on(spdlog::level::warn);
     }
 
     static std::shared_ptr<spdlog::logger> instance;
