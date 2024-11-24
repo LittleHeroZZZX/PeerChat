@@ -25,6 +25,10 @@ Message Message::make_text(SenderInfo sender, std::string content) {
                    MessageContentType::MSG_TEXT);
 }
 
+Message Message::make_empty() {
+    return Message(SenderInfo(), "", 0, MessageContentType::MSG_EMPTY);
+}
+
 Message Message::deserialize(const std::string& data) {
     std::stringstream ss(data);
     Message msg;

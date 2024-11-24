@@ -18,7 +18,7 @@ struct SenderInfo {
     }
 };
 
-enum MessageContentType { MSG_TEXT, MSG_IMAGE, MSG_FILE };
+enum MessageContentType { MSG_TEXT, MSG_IMAGE, MSG_FILE, MSG_EMPTY };
 
 class Message {
   public:
@@ -26,6 +26,7 @@ class Message {
     Message& operator=(Message&& other);
 
     static Message make_text(SenderInfo sender, std::string content);
+    static Message make_empty();
     static Message deserialize(const std::string& data);
     std::string serialize() const;
 
@@ -36,6 +37,12 @@ class Message {
            CEREAL_NVP(timestamp),
            CEREAL_NVP(content_type));
     }
+
+    const SenderInfo& getSender() const { return sender; }
+
+    const std::string& getContent() const { return content; }
+
+    std::time_t getTimestamp() const { return timestamp; }
 
   private:
     Message(SenderInfo sender,

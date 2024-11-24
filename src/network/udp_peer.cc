@@ -67,8 +67,8 @@ bool UDPPeer::set_remote(const std::string &ip, const in_port_t port) {
 
 bool UDPPeer::send_msg_async(const Message &msg) {
     {
-        std::lock_guard<std::mutex> lock(queue_mutex);
-        msg_queue.emplace(std::move(msg.serialize()));
+        std::lock_guard<std::mutex> lock(send_queue_mutex);
+        send_msg_queue.emplace(std::move(msg.serialize()));
     }
     cv.notify_one();
     return true;
@@ -76,22 +76,53 @@ bool UDPPeer::send_msg_async(const Message &msg) {
 
 void UDPPeer::sender_thread_func() {
     while (true) {
-        std::unique_lock<std::mutex> lock(queue_mutex);
-        cv.wait(lock, [this] { return !msg_queue.empty() || stop; });
+        std::unique_lock<std::mutex> lock(send_queue_mutex);
+        cv.wait(lock, [this] { return !send_msg_queue.empty() || stop; });
 
-        if (stop && msg_queue.empty()) break;
-        auto msg = std::move(msg_queue.front());
-        msg_queue.pop();
+        if (stop && send_msg_queue.empty()) break;
+        auto msg = std::move(send_msg_queue.front());
+        send_msg_queue.pop();
         lock.unlock();
         send_msg(msg);
     }
 }
 
-std::string UDPPeer::receive_msg() { return ""; }
+void UDPPeer::receiver_thread_func() {
+    while (true) {
+        if (stop) break;
+        std::string msg;
+        if (recv_msg(msg)) {
+            {
+                std::lock_guard<std::mutex> lock(recv_queue_mutex);
+                recv_msg_queue.emplace(std::move(msg));
+            }
+            if (notify_receive_msg.has_value()) {
+                notify_receive_msg.value()();
+            }
+        } else {
+            log_error("Fail to receive message.");
+        }
+    }
+}
+
+Message UDPPeer::receive_msg() {
+    std::lock_guard<std::mutex> lock(recv_queue_mutex);
+    if (recv_msg_queue.empty()) {
+        return Message::make_empty();
+    }
+    auto msg = std::move(recv_msg_queue.front());
+    recv_msg_queue.pop();
+    return Message::deserialize(msg);
+}
 
 void UDPPeer::close_connection() {
     // #TODO
+    close_socket();
     return;
+}
+
+void UDPPeer::set_on_receive_msg(std::function<void()> on_receive_msg) {
+    notify_receive_msg = on_receive_msg;
 }
 
 // close socket -> clear socket & port
@@ -122,5 +153,37 @@ bool UDPPeer::send_msg(const std::string &msg) {
         log_warning("Fail to send message.");
         return false;
     }
+    return true;
+}
+
+bool UDPPeer::recv_msg(std::string &msg) {
+    if (!socket_fd.has_value()) {
+        log_error("This UDPPeer has NO socket fd!");
+        return false;
+    }
+
+    // 设置接收缓冲区
+    char buffer[65536];  // UDP最大包大小
+    struct sockaddr recv_addr;
+    socklen_t recv_len = sizeof(recv_addr);
+
+    // 接收数据
+    ssize_t recv_ret = recvfrom(
+        socket_fd.value(), buffer, sizeof(buffer), 0, &recv_addr, &recv_len);
+
+    if (recv_ret < 0) {
+        log_warning("Fail to receive message.");
+        return false;
+    }
+
+    // 将接收到的数据转换为string
+    msg = std::string(buffer, recv_ret);
+
+    // 可选:保存发送方地址信息(如果需要回复的话)
+    if (!remote_addr.has_value()) {
+        remote_addr = recv_addr;
+        addr_len = recv_len;
+    }
+
     return true;
 }

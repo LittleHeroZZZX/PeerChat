@@ -12,7 +12,9 @@ class NetworkPeer {
     virtual bool send_msg_async(const Message &msg) = 0;
 
     // 接收消息
-    virtual std::string receive_msg() = 0;
+    virtual Message receive_msg() = 0;
+
+    virtual void set_on_receive_msg(std::function<void()> on_receive_msg) = 0;
 
     // 关闭连接
     virtual void close_connection() = 0;
