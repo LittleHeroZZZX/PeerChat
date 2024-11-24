@@ -4,3 +4,6 @@
 [submodule "third_party/cereal"]
 	path = third_party/cereal
 	url = https://github.com/USCiLab/cereal
+[submodule "third_party/FluentUI"]
+	path = third_party/FluentUI
+	url = git@github.com:zhuzichu520/FluentUI.git
