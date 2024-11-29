@@ -1,0 +1,12 @@
+# Copy form PaddlePaddle/Paddle project
+Language:        Cpp
+BasedOnStyle:  Google
+IndentWidth:     4
+TabWidth:        4
+ContinuationIndentWidth: 4
+AccessModifierOffset: -2
+Standard:  Cpp11
+AllowAllParametersOfDeclarationOnNextLine: true
+BinPackParameters: false
+BinPackArguments: false
+IncludeBlocks: Preserve
