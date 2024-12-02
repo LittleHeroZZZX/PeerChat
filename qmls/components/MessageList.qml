@@ -3,24 +3,28 @@ import QtQuick.Controls 2.15
 
 ListView {
     id: messageListView
-    // anchors.fill: parent
     clip: true
     model: ListModel {}
     delegate: MessageBubble {}
     spacing: 10
 
-    // 添加一个方法来更新消息
+    // 更新消息的方法
     function updateMessages(messages) {
-        model.clear();
-        for (var i = 0; i < messages.length; i++) {
-            model.append(messages[i]);
+        if (messages) {
+            model.clear();
+            for (var i = 0; i < messages.length; i++) {
+                model.append(messages[i]);
+            }
         }
     }
 
-    // 让消息从底部开始显示
-    verticalLayoutDirection: ListView.BottomToTop
-    flickableDirection: Flickable.VerticalFlick
-    onCountChanged: {
+    // 添加新消息的方法
+    function addNewMessage(message) {
+        model.append(message);
         positionViewAtEnd();
     }
+
+    // 保持垂直方向从上到下
+    verticalLayoutDirection: ListView.TopToBottom
+    flickableDirection: Flickable.VerticalFlick
 }

@@ -1,3 +1,4 @@
+// ChatList.qml
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 
@@ -6,21 +7,15 @@ ListView {
     clip: true
     interactive: true
     highlightFollowsCurrentItem: true
-    model: ListModel {
-        ListElement {
-            avatar: "file:///C:/Users/ZhouXin/projects/homework/networkProgram/peerchat/resources/avatars/user1.png"
-            nickname: "用户1"
-            ip: "192.168.1.100"
-            port: "8080"
-        }
-        ListElement {
-            avatar: "file:///C:/Users/ZhouXin/projects/homework/networkProgram/peerchat/resources/avatars/user2.png"
-            nickname: "用户2"
-            ip: "192.168.1.101"
-            port: "8081"
-        }
-    }
+    model: ListModel {}
+
     delegate: ChatListItem {
+        width: chatListView.width
+        nickname: model.nickName
+        avatar: model.avatar
+        ip: model.ip
+        port: model.port
+
         MouseArea {
             anchors.fill: parent
             onClicked: {
@@ -29,17 +24,35 @@ ListView {
         }
     }
     highlight: Rectangle {
-        color: "lightblue"
+        color: "#CCEBFF"
     }
     focus: true
 
-    // 添加一个信号，当选择改变时发出
     signal chatSelected(string nickname)
 
     onCurrentIndexChanged: {
-        console.log("当前选择的索引:", currentIndex);
+        peerNickname = model.get(currentIndex).nickName;
         if (currentIndex >= 0) {
-            chatSelected(model.get(currentIndex).nickname);
+            chatSelected(model.get(currentIndex).nickName);
         }
     }
+
+    function updateUserList() {
+        model.clear();
+        if (Object.keys(allUsers).length === 0) {
+            chatListModel.clear();
+            return;
+        }
+        for (var nickname in allUsers) {
+            if (allUsers.hasOwnProperty(nickname)) {
+                if (allUsers[nickname].ip) {
+                    model.append(allUsers[nickname]);
+                }
+            }
+        }
+    }
+
+    Component.onCompleted:
+    // updateUserList();  // 初始化时更新用户列表
+    {}
 }

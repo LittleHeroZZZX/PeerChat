@@ -1,5 +1,6 @@
 import QtQuick 2.15
 import QtGraphicalEffects 1.15
+import FluentUI 1.0
 
 Item {
     id: root
@@ -9,12 +10,18 @@ Item {
     width: size
     height: size
 
-    Image {
+    FluImage {
         id: image
         anchors.fill: parent
         source: root.source
         fillMode: Image.PreserveAspectCrop
         visible: false
+        cache: false
+        onStatusChanged: {
+            if (status === Image.Error) {
+                console.error("Error loading image:", source);
+            }
+        }
     }
 
     Rectangle {
@@ -28,5 +35,27 @@ Item {
         anchors.fill: image
         source: image
         maskSource: mask
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        color: "lightgray"
+        radius: width / 2
+        visible: image.status !== Image.Ready
+
+        Text {
+            anchors.centerIn: parent
+            text: image.status === Image.Loading ? "..." : "群"
+            font.pixelSize: root.size / 3
+            color: "gray"
+        }
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        color: "transparent"
+        border.width: 1
+        border.color: "#e0e0e0"
+        radius: width / 2
     }
 }
