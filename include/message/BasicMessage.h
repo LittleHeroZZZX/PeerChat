@@ -1,6 +1,7 @@
 #ifndef BASICMESSAGE_H
 #define BASICMESSAGE_H
 
+#include <cstdint>
 #include <optional>
 #include <string>
 #include "cereal/archives/portable_binary.hpp"
@@ -59,11 +60,27 @@ struct LogoutInfo {
     }
 };
 
+struct FileInfo {
+    int fileID;
+    std::string fileName;
+    std::string fileData;
+    int sliceIndex;
+
+    template <class Archive>
+    void serialize(Archive& ar) {
+        ar(CEREAL_NVP(fileID),
+           CEREAL_NVP(fileName),
+           CEREAL_NVP(fileData),
+           CEREAL_NVP(sliceIndex));
+    }
+};
+
 enum MessageType {
     INFO,       // 身份信息
     CHAT,       // 聊天消息
     NEW_GROUP,  // 创建新群组
     LOGOUT,     // 退出登录
+    FILE_SLICE,       // 文件传输
 
 };
 
@@ -79,6 +96,7 @@ class BasicMessage {
     std::optional<ChatInfo> getChatInfo() const { return chatInfo; }
     std::optional<GroupInfo> getGroupInfo() const { return groupInfo; }
     std::optional<LogoutInfo> getLogoutInfo() const { return logoutInfo; }
+    std::optional<FileInfo> getFileInfo() const { return fileInfo; }
 
     MessageType getType() const { return type; }
 
@@ -100,6 +118,12 @@ class BasicMessage {
     static std::shared_ptr<BasicMessage> makeLogoutInfoMsg(
         const std::string& nickName);
 
+    static std::shared_ptr<BasicMessage> makeFileInfoMsg(
+        const int fileID,
+        const std::string& fileName,
+        const std::string& fileData,
+        const int sliceIndex);
+
     static std::shared_ptr<BasicMessage> makeUserInfoMsg(const UserInfo& info);
 
     static std::shared_ptr<BasicMessage> makeChatInfoMsg(const ChatInfo& info);
@@ -109,6 +133,9 @@ class BasicMessage {
 
     static std::shared_ptr<BasicMessage> makeLogoutInfoMsg(
         const LogoutInfo& info);
+    
+    static std::shared_ptr<BasicMessage> makeFileInfoMsg(
+        const FileInfo& info);
 
     void setUserInfoIpAndPort(const std::string& ip, const int port);
 
@@ -118,7 +145,8 @@ class BasicMessage {
            CEREAL_NVP(userInfo),
            CEREAL_NVP(chatInfo),
            CEREAL_NVP(groupInfo),
-           CEREAL_NVP(logoutInfo));
+           CEREAL_NVP(logoutInfo),
+           CEREAL_NVP(fileInfo));
     }
 
   private:
@@ -127,6 +155,7 @@ class BasicMessage {
     std::optional<ChatInfo> chatInfo;      // 当且仅当type==CHAT
     std::optional<GroupInfo> groupInfo;    // 当且仅当type==CREATE_GROUP
     std::optional<LogoutInfo> logoutInfo;  // 当且仅当type==LOGOUT
+    std::optional<FileInfo> fileInfo;      // 当且仅当type==FILE
 };
 
 #endif  // BASICMESSAGE_H
