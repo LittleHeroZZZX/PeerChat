@@ -61,20 +61,23 @@ struct LogoutInfo {
 };
 
 struct FileInfo {
-    int fileID;
     std::string receiver;
     std::string sender;
     std::string fileName;
     std::string fileData;
     int totalSize;
     int sliceIndex;
+    int sliceSize;
 
     template <class Archive>
     void serialize(Archive& ar) {
-        ar(CEREAL_NVP(fileID),
+        ar(CEREAL_NVP(receiver),
+           CEREAL_NVP(sender),
            CEREAL_NVP(fileName),
            CEREAL_NVP(fileData),
-           CEREAL_NVP(sliceIndex));
+           CEREAL_NVP(totalSize),
+           CEREAL_NVP(sliceIndex),
+           CEREAL_NVP(sliceSize));
     }
 };
 
@@ -122,13 +125,13 @@ class BasicMessage {
         const std::string& nickName);
 
     static std::shared_ptr<BasicMessage> makeFileInfoMsg(
-        const int fileID,
         const std::string& receiver,
         const std::string& sender,
         const std::string& fileName,
         const std::string& fileData,
         const int totalSize,
-        const int sliceIndex);
+        const int sliceIndex,
+        const int sliceSize);
 
     static std::shared_ptr<BasicMessage> makeUserInfoMsg(const UserInfo& info);
 

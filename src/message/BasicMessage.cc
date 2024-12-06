@@ -83,16 +83,16 @@ std::shared_ptr<BasicMessage> BasicMessage::makeLogoutInfoMsg(
 }
 
 std::shared_ptr<BasicMessage> BasicMessage::makeFileInfoMsg(
-           const int fileID,
            const std::string& receiver,
            const std::string& sender,
            const std::string& fileName,
            const std::string& fileData,
            const int totalSize,
-           const int sliceIndex) {
+           const int sliceIndex,
+           const int sliceSize) {
     auto msg = std::make_shared<BasicMessage>();
     msg->type = FILE_SLICE;
-    msg->fileInfo = FileInfo{fileID, receiver, sender, fileName, fileData, totalSize, sliceIndex};
+    msg->fileInfo = FileInfo{receiver, sender, fileName, fileData, totalSize, sliceIndex, sliceSize};
     return msg;
 }
 
