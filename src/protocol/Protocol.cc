@@ -45,6 +45,13 @@ void Protocol::sendLogoutInfo(LogoutInfo &logoutInfo,
     sendMsg(msg, ip, port);
 }
 
+void Protocol::sendFileInfo(FileInfo &fileInfo,
+                            const std::string &ip,
+                            const int port) {
+    auto msg = BasicMessage::makeFileInfoMsg(fileInfo);
+    sendMsg(msg, ip, port);
+}
+
 void Protocol::sendMsg(const std::shared_ptr<BasicMessage> &msg,
                        const std::string &ip,
                        const int port) {
