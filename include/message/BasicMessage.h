@@ -62,8 +62,11 @@ struct LogoutInfo {
 
 struct FileInfo {
     int fileID;
+    std::string receiver;
+    std::string sender;
     std::string fileName;
     std::string fileData;
+    int totalSize;
     int sliceIndex;
 
     template <class Archive>
@@ -120,8 +123,11 @@ class BasicMessage {
 
     static std::shared_ptr<BasicMessage> makeFileInfoMsg(
         const int fileID,
+        const std::string& receiver,
+        const std::string& sender,
         const std::string& fileName,
         const std::string& fileData,
+        const int totalSize,
         const int sliceIndex);
 
     static std::shared_ptr<BasicMessage> makeUserInfoMsg(const UserInfo& info);
