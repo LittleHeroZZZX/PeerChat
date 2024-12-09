@@ -1,5 +1,6 @@
-#include "Server.h"
 #include "Logger.h"
+#include "Server.h"
+
 
 Server::Server()
     : protocol(Protocol(
@@ -14,6 +15,9 @@ Server::Server()
           },
           [this](const std::shared_ptr<BasicMessage> &msg) {
               this->handleLogoutInfo(msg);
+          },
+          [this](const std::shared_ptr<BasicMessage> &msg) {
+              this->handleFileInfo(msg);
           })) {
     Logger::get_instance()->info("服务端已启动，监听端口为{}",
                                  protocol.getLocolPort());
@@ -92,9 +96,8 @@ void Server::handleLogoutInfo(const std::shared_ptr<BasicMessage> &msg) {
 
 void Server::handleFileInfo(const std::shared_ptr<BasicMessage> &msg) {
     FileInfo fileInfo = msg->getFileInfo().value();
-    Logger::get_instance()->info("收到来自{}的文件信息，文件名为{}",
-                                 fileInfo.sender,
-                                 fileInfo.fileName);
+    Logger::get_instance()->info(
+        "收到来自{}的文件信息，文件名为{}", fileInfo.sender, fileInfo.fileName);
     if (userInfos.find(fileInfo.receiver) != userInfos.end()) {
         protocol.sendFileInfo(fileInfo,
                               userInfos[fileInfo.receiver].ip,
@@ -112,7 +115,6 @@ void Server::handleFileInfo(const std::shared_ptr<BasicMessage> &msg) {
     } else {
         Logger::get_instance()->warn("未找到接收者{}", fileInfo.receiver);
     }
-    
 }
 
 int main() {

@@ -14,8 +14,8 @@ class Protocol {
         std::function<void(const std::shared_ptr<BasicMessage> &)> onUserInfo,
         std::function<void(const std::shared_ptr<BasicMessage> &)> onChatInfo,
         std::function<void(const std::shared_ptr<BasicMessage> &)> onGroupInfo,
-        std::function<void(const std::shared_ptr<BasicMessage> &)>
-            onLogoutInfo);
+        std::function<void(const std::shared_ptr<BasicMessage> &)> onLogoutInfo,
+        std::function<void(const std::shared_ptr<BasicMessage> &)> onFileInfo);
 
     void sendUserInfo(UserInfo &userInfo,
                       const std::string &ip = "",
@@ -49,6 +49,7 @@ class Protocol {
     std::function<void(const std::shared_ptr<BasicMessage> &)> onChatInfo;
     std::function<void(const std::shared_ptr<BasicMessage> &)> onGroupInfo;
     std::function<void(const std::shared_ptr<BasicMessage> &)> onLogoutInfo;
+    std::function<void(const std::shared_ptr<BasicMessage> &)> onFileInfo;
 };
 
 #endif  // PROTOCOL_H

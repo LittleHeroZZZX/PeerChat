@@ -10,7 +10,6 @@
 #include <QVariant>
 #include <QVariantMap>
 
-
 #include "BasicMessage.h"
 #include "Protocol.h"
 
@@ -49,7 +48,7 @@ class Client : public QObject {
 
   private:
     Protocol protocol;
-    std::atomic<int> recvedSliceCount = 0;
+    std::atomic<int> recvedSize = 0;
     std::unordered_map<std::string, UserInfo> userInfos;
     QImage createGroupAvatar(const GroupInfo &groupInfo, int size);
 

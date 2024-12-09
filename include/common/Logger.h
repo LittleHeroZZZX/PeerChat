@@ -20,8 +20,8 @@ class Logger {
         // instance = spdlog::basic_logger_mt("file_logger",
         // "logs/peerchat.log"); 在控制台打印
         instance = spdlog::stdout_color_mt("console");
-        spdlog::set_level(spdlog::level::info);
-        instance->flush_on(spdlog::level::info);
+        spdlog::set_level(spdlog::level::warn);
+        instance->flush_on(spdlog::level::warn);
     }
 
     static std::shared_ptr<spdlog::logger> instance;

@@ -1,4 +1,3 @@
-#include "Client.h"
 #include <qdebug.h>
 #include <qurl.h>
 #include <QBuffer>
@@ -6,11 +5,12 @@
 #include <QFile>
 #include <QPainter>
 #include <QPainterPath>
-#include "Logger.h"
 #include <filesystem>
 #include <fstream>
+#include "Client.h"
+#include "Logger.h"
 
-#define SLICE_SIZE 256
+#define SLICE_SIZE 4096
 
 Client::Client(QObject *parent)
     : QObject(parent),
@@ -26,6 +26,9 @@ Client::Client(QObject *parent)
           },
           [this](const std::shared_ptr<BasicMessage> &msg) {
               this->handleLogoutInfo(msg);
+          },
+          [this](const std::shared_ptr<BasicMessage> &msg) {
+              this->handleFileInfo(msg);
           })) {
     Logger::get_instance()->info("客户已启动，监听端口为{}",
                                  protocol.getLocolPort());
@@ -176,37 +179,88 @@ void Client::handleLogoutInfo(const std::shared_ptr<BasicMessage> &msg) {
 
 void Client::handleFileInfo(const std::shared_ptr<BasicMessage> &msg) {
     auto fileInfo = msg->getFileInfo().value();
+    Logger::get_instance()->info("Received file info: {}", fileInfo.fileName);
     auto tempDir = std::filesystem::temp_directory_path();
     auto peerChatDir = tempDir / "PeerChat";
     if (!std::filesystem::exists(peerChatDir)) {
         std::filesystem::create_directory(peerChatDir);
     }
-    auto saveDir = peerChatDir / fileInfo.fileName;
+    auto saveDir = peerChatDir / (fileInfo.fileName + "_tmp");
     if (!std::filesystem::exists(saveDir)) {
         std::filesystem::create_directory(saveDir);
     }
     auto sliceFilePath = saveDir / (std::to_string(fileInfo.sliceIndex));
 
-    std::ofstream sliceFile(sliceFilePath, std::ios::out | std::ios::trunc | std::ios::binary);
-    if(!sliceFile.is_open())
-    {
-        Logger::get_instance()->error("Failed to open file: {}", sliceFilePath.string());
+    std::ofstream sliceFile(sliceFilePath,
+                            std::ios::out | std::ios::trunc | std::ios::binary);
+    if (!sliceFile.is_open()) {
+        Logger::get_instance()->error("Failed to open file: {}",
+                                      sliceFilePath.string());
         return;
     }
     sliceFile.write(fileInfo.fileData.c_str(), fileInfo.fileData.size());
     sliceFile.close();
-    recvedSliceCount++;
+    recvedSize += fileInfo.sliceSize;
+
+    if (recvedSize == fileInfo.totalSize) {
+        recvedSize = 0;
+
+        // 收集所有切片文件
+        std::vector<std::filesystem::path> sliceFiles;
+        for (const auto &entry : std::filesystem::directory_iterator(saveDir)) {
+            if (entry.is_regular_file()) {
+                sliceFiles.push_back(entry.path());
+            }
+        }
+
+        // 根据序号排序切片文件
+        std::sort(
+            sliceFiles.begin(),
+            sliceFiles.end(),
+            [](const std::filesystem::path &a, const std::filesystem::path &b) {
+                int indexA = std::stoi(a.filename().string());
+                int indexB = std::stoi(b.filename().string());
+                return indexA < indexB;
+            });
+
+        // 拼接所有切片文件
+        auto outputFilePath = peerChatDir / fileInfo.fileName;
+        std::ofstream outputFile(
+            outputFilePath, std::ios::binary | std::ios::out | std::ios::trunc);
+        if (!outputFile.is_open()) {
+            Logger::get_instance()->error("Failed to open output file: {}",
+                                          outputFilePath.string());
+            return;
+        }
+
+        for (const auto &sliceFilePath : sliceFiles) {
+            std::ifstream sliceFile(sliceFilePath,
+                                    std::ios::binary | std::ios::in);
+            if (!sliceFile.is_open()) {
+                Logger::get_instance()->error("Failed to open slice file: {}",
+                                              sliceFilePath.string());
+                continue;
+            }
+            outputFile << sliceFile.rdbuf();
+            sliceFile.close();
+            std::filesystem::remove(sliceFilePath);  // 拼接后删除切片文件
+        }
+
+        outputFile.close();
+        std::filesystem::remove(saveDir);  // 删除临时保存的目录
+    }
+    auto outputFilePath = peerChatDir / fileInfo.fileName;
+
     QVariantMap fileInfoMap;
     fileInfoMap["receiver"] = QString::fromStdString(fileInfo.receiver);
     fileInfoMap["sender"] = QString::fromStdString(fileInfo.sender);
     fileInfoMap["fileName"] = QString::fromStdString(fileInfo.fileName);
     fileInfoMap["totalSize"] = fileInfo.totalSize;
     fileInfoMap["sliceSize"] = fileInfo.sliceSize;
-    fileInfoMap["recvedCount"] = recvedSliceCount.load();
     fileInfoMap["isDir"] = fileInfo.isDir;
+    fileInfoMap["localPath"] = QString::fromStdString(outputFilePath.string());
     emit fileInfoReceived(fileInfoMap);
 }
-
 
 void Client::sendUserInfo(UserInfo &userInfo) {
     protocol.sendUserInfo(userInfo, "", -1);
@@ -295,43 +349,51 @@ void Client::sendLogoutInfo(const QVariantMap &logoutInfo) {
     protocol.sendLogoutInfo(newLogoutInfo, "", -1);
 }
 
-void Client::sendFileInfo(const QVariantMap &fileInfo){
+void Client::sendFileInfo(const QVariantMap &fileInfo) {
     std::string filePath = fileInfo.value("filePath").toString().toStdString();
     std::string receiver = fileInfo.value("receiver").toString().toStdString();
     std::string sender = fileInfo.value("sender").toString().toStdString();
     std::string fileName = fileInfo.value("fileName").toString().toStdString();
     bool isDir = fileInfo.value("isDir").toBool();
-    auto sendFileInfo = [&](){
-        std::ifstream file(filePath, std::ios::in | std::ios::binary);
-        if(!file.is_open()){
-            Logger::get_instance()->error("Failed to open file: {}", filePath);
-            return;
+
+    std::ifstream file(filePath, std::ios::in | std::ios::binary);
+    if (!file.is_open()) {
+        Logger::get_instance()->error("Failed to open file: {}", filePath);
+        // Consider notifying the user or handling this error
+        return;
+    }
+
+    file.seekg(0, std::ios::end);
+    std::streamsize totalSize = file.tellg();
+    file.seekg(0, std::ios::beg);
+
+    std::vector<char> buffer(SLICE_SIZE);
+
+    for (int sliceIndex = 0; !file.eof(); ++sliceIndex) {
+        file.read(buffer.data(), SLICE_SIZE);
+        std::streamsize sliceSize = file.gcount();
+
+        if (file.fail() && !file.eof()) {
+            Logger::get_instance()->error("Error reading file: {}", filePath);
+            break;
         }
-        file.seekg(0, std::ios::end);
-        int totalSize = file.tellg();
-        file.seekg(0, std::ios::beg);
-        int sliceIndex = 0;
-        char buffer[SLICE_SIZE];
-        while(!file.eof()){
-            file.read(buffer, SLICE_SIZE);
-            int sliceSize = file.gcount();
-            FileInfo fileInfo;
-            fileInfo.receiver = receiver;
-            fileInfo.sender = sender;
-            fileInfo.fileName = fileName;
-            fileInfo.fileData = std::string(buffer, sliceSize);
-            fileInfo.totalSize = totalSize;
-            fileInfo.sliceIndex = sliceIndex;
-            fileInfo.sliceSize = sliceSize;
-            fileInfo.isDir = isDir;
-            protocol.sendFileInfo(fileInfo, "", -1);
-            sliceIndex++;
-        }
-    };
-    std::thread(sendFileInfo).detach();
+
+        FileInfo fileInfo{receiver,
+                          sender,
+                          fileName,
+                          std::string(buffer.data(), sliceSize),
+                          static_cast<int>(totalSize),
+                          sliceIndex,
+                          static_cast<int>(sliceSize),
+                          isDir};
+
+        protocol.sendFileInfo(fileInfo, "", -1);
+    }
+
+    file.close();
 }
 
-void Client::sendFileInfo(FileInfo &fileInfo){
+void Client::sendFileInfo(FileInfo &fileInfo) {
     protocol.sendFileInfo(fileInfo, "", -1);
 }
 

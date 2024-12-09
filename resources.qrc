@@ -11,6 +11,7 @@
         <file>qmls/components/AvatarBar.qml</file>
         <file>qmls/components/SelectableUserList.qml</file>
         <file>qmls/components/CreateGroupWindow.qml</file>
+        <file>qmls/components/FileTrans.qml</file>
         <file>avatars/1.png</file>
     </qresource>
 

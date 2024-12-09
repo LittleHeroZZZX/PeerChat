@@ -1,5 +1,5 @@
-#include "UdpConnector.h"
 #include "Logger.h"
+#include "UdpConnector.h"
 
 UdpConnector::~UdpConnector() {
     stop = true;
@@ -137,6 +137,25 @@ void UdpConnector::initialize() {
 #endif
         return;
     }
+    constexpr int BUFFER_SIZE = 1024 * 1024;
+    int result = setsockopt(socketFd.load(),
+                            SOL_SOCKET,
+                            SO_RCVBUF,
+                            (const char *)&BUFFER_SIZE,
+                            sizeof(BUFFER_SIZE));
+    if (result < 0) {
+        logError("Failed to set socket receive buffer size");
+    }
+
+    result = setsockopt(socketFd.load(),
+                        SOL_SOCKET,
+                        SO_SNDBUF,
+                        (const char *)&BUFFER_SIZE,
+                        sizeof(BUFFER_SIZE));
+    if (result < 0) {
+        logError("Failed to set socket send buffer size");
+    }
+
     localPort = defaultLocalPort;
     sockaddr localAddr;
     while (localPort < 65535) {

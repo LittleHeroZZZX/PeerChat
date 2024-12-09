@@ -4,7 +4,6 @@
 #include "Client.h"
 
 int main(int argc, char *argv[]) {
-    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QGuiApplication app(argc, argv);
 
     QQmlApplicationEngine engine;
@@ -13,6 +12,9 @@ int main(int argc, char *argv[]) {
     engine.rootContext()->setContextProperty("client", &client);
 
     const QUrl url(QStringLiteral("qrc:/qmls/main.qml"));
+    // const QUrl url(QStringLiteral(
+    //     "file:///C:/Users/ZhouXin/projects/homework/networkProgram/"
+    //     "peerchat/qmls/main.qml"));
     QObject::connect(
         &engine,
         &QQmlApplicationEngine::objectCreated,

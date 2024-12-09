@@ -1,15 +1,18 @@
+#include "Logger.h"
 #include "Protocol.h"
 
 Protocol::Protocol(
     std::function<void(const std::shared_ptr<BasicMessage> &)> onUserInfo,
     std::function<void(const std::shared_ptr<BasicMessage> &)> onChatInfo,
     std::function<void(const std::shared_ptr<BasicMessage> &)> onGroupInfo,
-    std::function<void(const std::shared_ptr<BasicMessage> &)> onLogoutInfo)
+    std::function<void(const std::shared_ptr<BasicMessage> &)> onLogoutInfo,
+    std::function<void(const std::shared_ptr<BasicMessage> &)> onFileInfo)
     : udpConnector(UdpConnector::getInstance()),
       onUserInfo(onUserInfo),
       onChatInfo(onChatInfo),
       onGroupInfo(onGroupInfo),
-      onLogoutInfo(onLogoutInfo) {
+      onLogoutInfo(onLogoutInfo),
+      onFileInfo(onFileInfo) {
     udpConnector.setOnRecvMsg(
         [this](const std::string &msg, const std::string &ip, int port) {
             this->recvMsg(msg, ip, port);
@@ -50,6 +53,8 @@ void Protocol::sendFileInfo(FileInfo &fileInfo,
                             const int port) {
     auto msg = BasicMessage::makeFileInfoMsg(fileInfo);
     sendMsg(msg, ip, port);
+    Logger::get_instance()->info(
+        "发送文件信息给{}，文件名为{}", fileInfo.receiver, fileInfo.fileName);
 }
 
 void Protocol::sendMsg(const std::shared_ptr<BasicMessage> &msg,
@@ -95,6 +100,10 @@ void Protocol::recvMsg(const std::string &msg,
         }
         case LOGOUT: {
             onLogoutInfo(message);
+            break;
+        }
+        case FILE_SLICE: {
+            onFileInfo(message);
             break;
         }
         default:
