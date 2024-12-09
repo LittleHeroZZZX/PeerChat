@@ -1,8 +1,8 @@
-import QtQuick 2.15
-import QtQuick.Controls 2.15
-import QtQuick.Layouts 1.15
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
 import "./components" as Components
-import FluentUI 1.0
+import FluentUI
 
 FluWindow {
     id: applicationWindow
@@ -122,6 +122,7 @@ FluWindow {
                     Layout.preferredHeight: 1
                 }
                 Components.FileTrans {
+                    id: fileTransferBar
                     Layout.fillWidth: true
                     Layout.bottomMargin: 10
                     // Layout.preferredHeight:
@@ -171,10 +172,10 @@ FluWindow {
             chatList.updateUserList();  // 通知 ChatList 更新列表
         });
         client.fileInfoReceived.connect(function (fileinfo) {
-            var chatKey = receiver === myNickname ? sender : receiver;
+            var chatKey = fileinfo.receiver === myNickname ? fileinfo.sender : fileinfo.receiver;
             var fileName = fileinfo.fileName;
             var localPath = fileinfo.localPath;
-            var receivedTime = fileinfo.timestamp;
+            var receivedTime = Date.now();
             var totalSize = fileinfo.totalSize;
             var sliceSize = fileinfo.sliceSize;
             var isDir = fileinfo.isDir;
@@ -185,6 +186,7 @@ FluWindow {
 
             if (!files[chatKey][fileName] || files[chatKey][fileName].fileName !== fileName) {
                 files[chatKey][fileName] = {
+                    fileName: fileName,
                     localPath: localPath,
                     startTime: receivedTime,
                     totalSize: totalSize,
@@ -201,7 +203,8 @@ FluWindow {
                 fileInfo.speed = duration > 0 ? (fileInfo.recvedSize / duration) : 0; // bytes/second
                 fileInfo.progress = 100 * fileInfo.recvedSize / fileInfo.totalSize;
             }
-            fileTrans.updateFileInfo(files[chatKey][fileName]);
+            // console.log("fileInfoReceived", files[chatKey][fileName]);
+            fileTransferBar.updateFileInfo(files[chatKey][fileName]);
         });
     }
     Component.onDestruction: {

@@ -1,8 +1,8 @@
-import QtQuick 2.15
-import QtQuick.Controls 2.15
-import QtQuick.Dialogs 1.3
-import QtQuick.Layouts 1.15
-import FluentUI 1.0
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Dialogs
+import QtQuick.Layouts
+import FluentUI
 
 Rectangle {
     id: fileTransferBar
@@ -81,8 +81,9 @@ Rectangle {
             }
 
             // 进度条
-            ProgressBar {
+            FluProgressBar {
                 id: progressBar
+                indeterminate: false
                 Layout.fillWidth: true
                 height: 15
                 from: 0
@@ -129,13 +130,11 @@ Rectangle {
     FileDialog {
         id: fileDialog
         title: "请选择文件或文件夹"
-        folder: shortcuts.home
-        selectMultiple: false
-        selectFolder: false
+        fileMode: FileDialog.OpenFile
         onAccepted: {
-            fileName.text = fileDialog.fileUrl.toString().split("/").pop();
+            fileName.text = fileDialog.selectedFile.toString().split("/").pop();
             client.sendFileInfo({
-                filePath: fileDialog.fileUrl.toString().replace("file://", ""),
+                filePath: fileDialog.selectedFile.toString().replace("file:///", ""),
                 receiver: peerNickname,
                 sender: myNickname,
                 fileName: fileName.text,

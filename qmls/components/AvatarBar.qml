@@ -1,9 +1,9 @@
-import QtQuick 2.15
-import QtQuick.Controls 2.15
-import QtQuick.Layouts 1.15
-import QtGraphicalEffects 1.15
-import QtQuick.Dialogs 1.2
-import FluentUI 1.0
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
+import Qt5Compat.GraphicalEffects
+import QtQuick.Dialogs
+import FluentUI
 
 Rectangle {
     id: root
@@ -89,7 +89,7 @@ Rectangle {
         title: "Select an Image"
         nameFilters: ["Image files (*.png *.jpg *.jpeg)"]
         onAccepted: {
-            root.avatarSource = fileDialog.fileUrl;
+            root.avatarSource = fileDialog.selectedFile.toString();
             updateUserInfo();
         }
     }
