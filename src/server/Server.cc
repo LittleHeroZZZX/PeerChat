@@ -90,6 +90,31 @@ void Server::handleLogoutInfo(const std::shared_ptr<BasicMessage> &msg) {
     }
 }
 
+void Server::handleFileInfo(const std::shared_ptr<BasicMessage> &msg) {
+    FileInfo fileInfo = msg->getFileInfo().value();
+    Logger::get_instance()->info("收到来自{}的文件信息，文件名为{}",
+                                 fileInfo.sender,
+                                 fileInfo.fileName);
+    if (userInfos.find(fileInfo.receiver) != userInfos.end()) {
+        protocol.sendFileInfo(fileInfo,
+                              userInfos[fileInfo.receiver].ip,
+                              userInfos[fileInfo.receiver].port);
+    } else if (groupInfos.find(fileInfo.receiver) != groupInfos.end()) {
+        // 群文件
+        for (auto &member : groupInfos[fileInfo.receiver].members) {
+            if (member == fileInfo.sender) {
+                // 跳过发送者
+                continue;
+            }
+            protocol.sendFileInfo(
+                fileInfo, userInfos[member].ip, userInfos[member].port);
+        }
+    } else {
+        Logger::get_instance()->warn("未找到接收者{}", fileInfo.receiver);
+    }
+    
+}
+
 int main() {
     Server server;
     printf("Listening the port: %d\n", server.getLocalPort());
