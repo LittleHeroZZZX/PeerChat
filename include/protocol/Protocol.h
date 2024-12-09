@@ -29,6 +29,9 @@ class Protocol {
     void sendLogoutInfo(LogoutInfo &logoutInfo,
                         const std::string &ip = "",
                         const int port = -1);
+    void sendFileInfo(FileInfo &fileInfo,
+                      const std::string &ip = "",
+                      const int port = -1);
     void sendMsg(const std::shared_ptr<BasicMessage> &msg,
                  const std::string &ip = "",
                  const int port = -1);
