@@ -89,10 +89,11 @@ std::shared_ptr<BasicMessage> BasicMessage::makeFileInfoMsg(
            const std::string& fileData,
            const int totalSize,
            const int sliceIndex,
-           const int sliceSize) {
+           const int sliceSize,
+           const bool isDir) {
     auto msg = std::make_shared<BasicMessage>();
     msg->type = FILE_SLICE;
-    msg->fileInfo = FileInfo{receiver, sender, fileName, fileData, totalSize, sliceIndex, sliceSize};
+    msg->fileInfo = FileInfo{receiver, sender, fileName, fileData, totalSize, sliceIndex, sliceSize, isDir};
     return msg;
 }
 
