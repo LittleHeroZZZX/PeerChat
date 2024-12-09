@@ -14,6 +14,7 @@ FluWindow {
     // 创建一个 JavaScript 对象来存储所有聊天记录
     property var allChatMessages: ({})
     property var allUsers: ({})
+    property var files: ({})
     property string myNickname: "用户x"
     property string peerNickname: ""
 
@@ -32,7 +33,7 @@ FluWindow {
                 myNickname = nickname;
             }
         }
-        // Rectangle {
+        // Rectangle
         SplitView.preferredWidth: 250
         SplitView.minimumWidth: 200
         SplitView.fillHeight: true
@@ -95,7 +96,6 @@ FluWindow {
             }
         }
 
-        // }
         Rectangle {
             color: "#F0F0F0"
             gradient: Gradient {
@@ -121,7 +121,11 @@ FluWindow {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 1
                 }
-
+                Components.FileTrans {
+                    Layout.fillWidth: true
+                    Layout.bottomMargin: 10
+                    // Layout.preferredHeight:
+                }
                 Components.InputArea {
                     id: inputArea
                     Layout.margins: 10
@@ -165,6 +169,39 @@ FluWindow {
             showWarning(qsTr("用户") + logoutInfo.nickName + qsTr("离开了聊天"));
             delete allUsers[logoutInfo.nickName];
             chatList.updateUserList();  // 通知 ChatList 更新列表
+        });
+        client.fileInfoReceived.connect(function (fileinfo) {
+            var chatKey = receiver === myNickname ? sender : receiver;
+            var fileName = fileinfo.fileName;
+            var localPath = fileinfo.localPath;
+            var receivedTime = fileinfo.timestamp;
+            var totalSize = fileinfo.totalSize;
+            var sliceSize = fileinfo.sliceSize;
+            var isDir = fileinfo.isDir;
+
+            if (!files[chatKey]) {
+                files[chatKey] = {};
+            }
+
+            if (!files[chatKey][fileName] || files[chatKey][fileName].fileName !== fileName) {
+                files[chatKey][fileName] = {
+                    localPath: localPath,
+                    startTime: receivedTime,
+                    totalSize: totalSize,
+                    recvedSize: sliceSize,
+                    progress: 100 * sliceSize / totalSize,
+                    speed: 0,
+                    isDir: isDir,
+                    isOwnFile: false
+                };
+            } else {
+                var fileInfo = files[chatKey][fileName];
+                fileInfo.recvedSize += sliceSize;
+                var duration = (Date.now() - fileInfo.startTime) / 1000; // 转换为秒
+                fileInfo.speed = duration > 0 ? (fileInfo.recvedSize / duration) : 0; // bytes/second
+                fileInfo.progress = 100 * fileInfo.recvedSize / fileInfo.totalSize;
+            }
+            fileTrans.updateFileInfo(files[chatKey][fileName]);
         });
     }
     Component.onDestruction: {
