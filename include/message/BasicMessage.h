@@ -68,6 +68,7 @@ struct FileInfo {
     int totalSize;
     int sliceIndex;
     int sliceSize;
+    bool isDir;
 
     template <class Archive>
     void serialize(Archive& ar) {
@@ -77,7 +78,8 @@ struct FileInfo {
            CEREAL_NVP(fileData),
            CEREAL_NVP(totalSize),
            CEREAL_NVP(sliceIndex),
-           CEREAL_NVP(sliceSize));
+           CEREAL_NVP(sliceSize),
+           CEREAL_NVP(isDir));
     }
 };
 
@@ -131,7 +133,8 @@ class BasicMessage {
         const std::string& fileData,
         const int totalSize,
         const int sliceIndex,
-        const int sliceSize);
+        const int sliceSize,
+        const bool isDir);
 
     static std::shared_ptr<BasicMessage> makeUserInfoMsg(const UserInfo& info);
 
