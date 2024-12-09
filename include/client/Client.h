@@ -30,6 +30,7 @@ class Client : public QObject {
     void handleChatInfo(const std::shared_ptr<BasicMessage> &msg);
     void handleGroupInfo(const std::shared_ptr<BasicMessage> &msg);
     void handleLogoutInfo(const std::shared_ptr<BasicMessage> &msg);
+    void handleFileInfo(const std::shared_ptr<BasicMessage> &msg);
 
     int getLocalPort() { return protocol.getLocolPort(); }
 
@@ -37,15 +38,18 @@ class Client : public QObject {
     void sendChatInfo(ChatInfo &chatInfo);
     void sendGroupInfo(GroupInfo &groupInfo);
     void sendLogoutInfo(LogoutInfo &logoutInfo);
+    void sendFileInfo(FileInfo &fileInfo);
   public slots:
     // 从QML发送消息
     Q_INVOKABLE void sendUserInfo(const QVariantMap &userInfo);
     Q_INVOKABLE void sendChatInfo(const QVariantMap &chatInfo);
-    Q_INVOKABLE void sendGroupInfo(const QVariantMap &groupInfo);
     Q_INVOKABLE void sendLogoutInfo(const QVariantMap &logoutInfo);
+    Q_INVOKABLE void sendGroupInfo(const QVariantMap &groupInfo);
+    Q_INVOKABLE void sendFileInfo(const QVariantMap &fileInfo);
 
   private:
     Protocol protocol;
+    std::atomic<int> recvedSliceCount = 0;
     std::unordered_map<std::string, UserInfo> userInfos;
     QImage createGroupAvatar(const GroupInfo &groupInfo, int size);
 
@@ -54,6 +58,7 @@ class Client : public QObject {
     void chatInfoReceived(const QVariantMap &userInfo);
     void groupInfoReceived(const GroupInfo &groupInfo);
     void logoutInfoReceived(const QVariantMap &logoutInfo);
+    void fileInfoReceived(const QVariantMap &fileInfo);
 };
 
 #endif  // CLIENT_H

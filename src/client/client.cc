@@ -7,6 +7,10 @@
 #include <QPainter>
 #include <QPainterPath>
 #include "Logger.h"
+#include <filesystem>
+#include <fstream>
+
+#define SLICE_SIZE 256
 
 Client::Client(QObject *parent)
     : QObject(parent),
@@ -170,6 +174,40 @@ void Client::handleLogoutInfo(const std::shared_ptr<BasicMessage> &msg) {
     emit logoutInfoReceived(logoutInfoMap);
 }
 
+void Client::handleFileInfo(const std::shared_ptr<BasicMessage> &msg) {
+    auto fileInfo = msg->getFileInfo().value();
+    auto tempDir = std::filesystem::temp_directory_path();
+    auto peerChatDir = tempDir / "PeerChat";
+    if (!std::filesystem::exists(peerChatDir)) {
+        std::filesystem::create_directory(peerChatDir);
+    }
+    auto saveDir = peerChatDir / fileInfo.fileName;
+    if (!std::filesystem::exists(saveDir)) {
+        std::filesystem::create_directory(saveDir);
+    }
+    auto sliceFilePath = saveDir / (std::to_string(fileInfo.sliceIndex));
+
+    std::ofstream sliceFile(sliceFilePath, std::ios::out | std::ios::trunc | std::ios::binary);
+    if(!sliceFile.is_open())
+    {
+        Logger::get_instance()->error("Failed to open file: {}", sliceFilePath.string());
+        return;
+    }
+    sliceFile.write(fileInfo.fileData.c_str(), fileInfo.fileData.size());
+    sliceFile.close();
+    recvedSliceCount++;
+    QVariantMap fileInfoMap;
+    fileInfoMap["receiver"] = QString::fromStdString(fileInfo.receiver);
+    fileInfoMap["sender"] = QString::fromStdString(fileInfo.sender);
+    fileInfoMap["fileName"] = QString::fromStdString(fileInfo.fileName);
+    fileInfoMap["totalSize"] = fileInfo.totalSize;
+    fileInfoMap["sliceSize"] = fileInfo.sliceSize;
+    fileInfoMap["recvedCount"] = recvedSliceCount.load();
+    fileInfoMap["isDir"] = fileInfo.isDir;
+    emit fileInfoReceived(fileInfoMap);
+}
+
+
 void Client::sendUserInfo(UserInfo &userInfo) {
     protocol.sendUserInfo(userInfo, "", -1);
 }
@@ -255,6 +293,46 @@ void Client::sendLogoutInfo(const QVariantMap &logoutInfo) {
     newLogoutInfo.nickName =
         logoutInfo.value("nickName").toString().toStdString();
     protocol.sendLogoutInfo(newLogoutInfo, "", -1);
+}
+
+void Client::sendFileInfo(const QVariantMap &fileInfo){
+    std::string filePath = fileInfo.value("filePath").toString().toStdString();
+    std::string receiver = fileInfo.value("receiver").toString().toStdString();
+    std::string sender = fileInfo.value("sender").toString().toStdString();
+    std::string fileName = fileInfo.value("fileName").toString().toStdString();
+    bool isDir = fileInfo.value("isDir").toBool();
+    auto sendFileInfo = [&](){
+        std::ifstream file(filePath, std::ios::in | std::ios::binary);
+        if(!file.is_open()){
+            Logger::get_instance()->error("Failed to open file: {}", filePath);
+            return;
+        }
+        file.seekg(0, std::ios::end);
+        int totalSize = file.tellg();
+        file.seekg(0, std::ios::beg);
+        int sliceIndex = 0;
+        char buffer[SLICE_SIZE];
+        while(!file.eof()){
+            file.read(buffer, SLICE_SIZE);
+            int sliceSize = file.gcount();
+            FileInfo fileInfo;
+            fileInfo.receiver = receiver;
+            fileInfo.sender = sender;
+            fileInfo.fileName = fileName;
+            fileInfo.fileData = std::string(buffer, sliceSize);
+            fileInfo.totalSize = totalSize;
+            fileInfo.sliceIndex = sliceIndex;
+            fileInfo.sliceSize = sliceSize;
+            fileInfo.isDir = isDir;
+            protocol.sendFileInfo(fileInfo, "", -1);
+            sliceIndex++;
+        }
+    };
+    std::thread(sendFileInfo).detach();
+}
+
+void Client::sendFileInfo(FileInfo &fileInfo){
+    protocol.sendFileInfo(fileInfo, "", -1);
 }
 
 // int main(int argc, char *argv[]) {
