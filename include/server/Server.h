@@ -15,6 +15,7 @@ class Server {
     void handleChatInfo(const std::shared_ptr<BasicMessage> &msg);
     void handleGroupInfo(const std::shared_ptr<BasicMessage> &msg);
     void handleLogoutInfo(const std::shared_ptr<BasicMessage> &msg);
+    void handleFileInfo(const std::shared_ptr<BasicMessage> &msg);
 
     int getLocalPort() { return protocol.getLocolPort(); }
 
@@ -22,6 +23,7 @@ class Server {
     Protocol protocol;
     std::unordered_map<std::string, UserInfo> userInfos;
     std::unordered_map<std::string, GroupInfo> groupInfos;
+    int fileID = 0;
 };
 
 #endif  // SERVER_H
